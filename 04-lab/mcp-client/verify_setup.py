@@ -7,6 +7,13 @@ import os
 import sys
 from pathlib import Path
 
+# Fix encoding on Windows consoles
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 def check_environment():
     """Check if .env file exists and is configured"""
     print("🔍 Checking environment configuration...")

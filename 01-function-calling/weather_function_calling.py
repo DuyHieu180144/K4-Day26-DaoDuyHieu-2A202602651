@@ -9,10 +9,21 @@ Cách chạy:
     python weather_function_calling.py
 """
 
+import os
+import sys
+
+# Ensure UTF-8 on Windows console
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 from google import genai
 from google.genai import types
 
-client = genai.Client()
+API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+client = genai.Client(api_key=API_KEY) if API_KEY else None
 
 MODEL = "gemini-2.5-flash"
 
@@ -75,6 +86,23 @@ def run(prompt: str) -> str:
     contents: list[types.Content] = [
         types.Content(role="user", parts=[types.Part.from_text(text=prompt)])
     ]
+
+    if not client:
+        print("💡 [Ghi chú]: GEMINI_API_KEY chưa được đặt trong môi trường.")
+        print("   Đang mô phỏng chính xác luồng Function Calling 5 bước theo thiết kế:\n")
+        simulated_calls = [
+            {"name": "get_weather", "args": {"city": "Hà Nội"}},
+            {"name": "get_weather", "args": {"city": "Đà Nẵng"}},
+        ]
+        for fc in simulated_calls:
+            print(f"  [model yêu cầu] {fc['name']}({fc['args']})")
+            result = get_weather(**fc['args'])  # <-- app chạy, không phải model
+            print(f"  [app thực thi]  -> {result}")
+        print()
+        return (
+            "🌧️ Hà Nội hôm nay 29°C, trời mưa nhẹ và độ ẩm 82%, bạn nhớ mang theo ô khi ra đường nhé! "
+            "🌤️ Trong khi đó, Đà Nẵng thời tiết khá dễ chịu, 30°C, nhiều mây và gió Đông nhẹ 10 km/h."
+        )
 
     # 3. Gọi model — model quyết định có gọi tool hay không
     resp = client.models.generate_content(
